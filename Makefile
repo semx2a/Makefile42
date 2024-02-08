@@ -6,158 +6,151 @@
 #    By: seozcan <seozcan@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2021/12/07 19:14:12 by seozcan           #+#    #+#              #
-#    Updated: 2022/03/09 18:37:18 by seozcan          ###   ########.fr        #
+#    Updated: 2024/02/08 16:19:27 by seozcan          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::TARGET::
+include settings.mk
 
-NAME	= 
+# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::DIRECTORIES::
 
-# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::SOURCES::
+S		=	src/
 
-SDIR	= srcs/
-
-ODIR	= objs/
-
-SRCS	=  
-
-OBJS	= ${SRCS:.c=.o}
-
-# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::FUNCTIONS::
-
-FDIR	= fcts/
-
-FSRCS	= 
-
-FOBJS	= ${FSRCS:.c=.o}
-
-# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::BONUS::
-
-BDIR	= bonus/
-
-BSRCS	= 
-
-BOBJS	= ${BSRCS:.c=.o}
-
-# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::COMPILERS::
-
-CC		= gcc
-
-WFLAGS	= -Wall -Wextra -Werror
-
-AR		= ar
-
-ARFLAGS	= rcs
-
-# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::HEADERS::
-
-IDIR	= inc/
-
-INC		= 
-
-# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::LIBRARY::
-
-IS_LIBFT	= true
-
-LDIR 	= libft/
-
-LIB		= libft.a
-
-LINC	= $(addprefix $(LDIR), inc) 
-
-LIBFT_COMPLETE	= $(addprefix $(LDIR), ${LIB})
-
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::COLORS::
-
-BLUE		=	\033[1;34m
-CYAN		=	\033[0;36m
-GREEN		=	\033[0;92m
-ORANGE  	=	\033[0;33m
-NO_COLOR	=	\033[m
-PURPLE		=	\033[0;35m
-BPURPLE		=	\033[1;35m
-BCYAN		=	\033[1;36m
-ICYAN		=	\033[3;36m
-
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::PARAMS::
-
-INCLUDE_FLAGS 	=	$(addprefix -I , $(IDIR))
-
-ifeq ($(IS_LIBFT),true)
-	INCLUDE_FLAGS	+=	$(addprefix -I , ${LINC})
+ifeq ($(MAKECMDGOALS), bonus)
+S		=	bonus/
 endif
+
+O		=	obj/
+I 		=	inc/
+D 		=	dep/
+L 		=	Libft/
+P 		=	ft_printf/
+M 		=	minilibx-linux/
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::CUSTOM FLAGS::
+
+CFLAGS	+=	-I$I
+
+LDFLAGS	=
+
+ifeq ($(IS_LIB), true)
+	CFLAGS	+=	-I$L$I
+	LDFLAGS	+=	-L$L -lft
+endif
+
+ifeq ($(IS_PTF), true)
+	CFLAGS	+=	-I$P$I
+	LDFLAGS	+=	-L$P -lftprintf
+endif
+
+ifeq ($(IS_MLX), true)
+	CFLAGS	+=	-I$M
+	LDFLAGS	+=	-L$M -lmlx
+	ifeq ($(shell uname -s), Darwin)
+		LDFLAGS += -framework OpenGL -framework AppKit -lX11 -lXext
+	else ifeq ($(shell uname -s), Linux)
+		LDFLAGS += -lXext -lX11 -lm
+	endif
+endif
+
+ifeq (debug, $(filter debug,$(MAKECMDGOALS)))
+	CFLAGS	+=	-g3
+endif
+ifeq (sanadd, $(filter sanadd,$(MAKECMDGOALS)))
+	CFLAGS	+=	-fsanitize=address
+endif
+ifeq (santhread, $(filter santhread,$(MAKECMDGOALS)))
+	CFLAGS	+=	-fsanitize=thread
+endif
+
+RM		=	/bin/rm -rf
+
+SPACE 	= 	awk -F ':' '{ printf "%-61s %s\n", $$1 ":", $$2 }'
+
+
+# :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::OBJECTS::
+
+OBJ		=	$(SRC:$S%=$O%.o)
+
+DEP		=	$(SRC:$S%=$D%.d)
 
 # :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::RULES::
 
+all: header lib h2 message $(NAME)
 
-all:		header lib clean $(NAME)
-	@$(CC) -o $(NAME) $(wildcard $(ODIR)*.o) $(LIBFT_COMPLETE)
-	@echo "$(GREEN)mandatory exe:\t\t\t\t\t\t[OK]$(NO_COLOR)"
+bonus: all
 
-bonus:		header lib clean o_dir
-	@$(CC) $(WFLAGS) -I $(IDIR) -c $(addprefix $(BDIR), $(BSRCS)) $(addprefix $(FDIR), $(FSRCS))
-	@echo "$(GREEN)bonus compilation:\t\t\t\t\t[OK]$(NO_COLOR)"
-	@mv *.o $(ODIR)
-	@$(CC) -o $(NAME) $(ODIR)*.o
-	@echo "$(GREEN)bonus exe:\t\t\t\t\t\t[OK]$(NO_COLOR)"
-	@make -s clean
+$O:
+	@mkdir -p $@
+	@echo "$(HIGREEN)creating $O folder:[OK]$(NO_COLOR)" | $(SPACE)
 
-$(NAME):	o_dir	
-	@$(CC) $(WFLAGS) $(ICLUDE_FLAGS) -c $(addprefix $(SDIR), $(SRCS)) $(addprefix $(FDIR), $(FSRCS))
-	@echo "$(GREEN)mandatory compilation:\t\t\t\t\t[OK]$(NO_COLOR)"
-	@mv $(OBJS) $(FOBJS) $(ODIR)
+$(OBJ): | $O
+
+$(OBJ): $O%.o: $S%
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@echo "$(HIGREEN)compiling $<:[OK]$(NO_COLOR)" | $(SPACE)
+
+$D:
+	@mkdir -p $@
+	@echo "$(HIGREEN)creating $D folder:[OK]$(NO_COLOR)" | $(SPACE)
+
+$(DEP): | $D
+
+$(DEP): $D%.d: $S%
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -MM -MF $@ -MT "$O$*.o $@" $<
+	@echo "$(HIGREEN)compiling $<:[OK]$(NO_COLOR)" | $(SPACE)
+
+
+$(NAME): $(OBJ) $(DEP)
+	@$(CC) $(CFLAGS) $(OBJ) -o $(NAME) $(LDFLAGS)
+	@echo "$(HIGREEN)compiling $(NAME):[OK]$(NO_COLOR)" | $(SPACE)
+
+debug:		all
+
+sanadd:		all
+
+santhread:	all
 
 lib:
-	@make -C $(LDIR) --quiet
-
-header:
-	@echo -n "$(BPURPLE)"
-	@echo "   ______________________________________________________"
-	@echo "  /\     __________    ________    ___   ___    _______  \ "
-	@echo " /  \   /\         \  /\   __  \  /\  \ /\  \  /\  ____\  \ "
-	@echo "/    \  \ \  \ _/\  \ \ \   __  \ \ \  \ /_ /_ \ \  _\_/_  \ "
-	@echo "\     \  \ \__\_/ \__\ \ \__\-\__\ \ \__\  \__\ \ \______\  \ "
-	@echo " \     \  \/__/  \/__/  \/__/ /__/  \/__/ \/__/  \/______/   \ "
-	@echo "  \     \_________ ___________________________________________\ "
-	@echo "   \    /                                                     / "
-	@echo "    \  /                   $(SCYAN) S E O Z C A N \
-$(NO_COLOR)$(BPURPLE)            ____   / "
-	@echo "     \/______________________________________________/\   \_/ "
-	@echo "                                                     \ \___\ "
-	@echo "                                                      \/___/ "
-	@echo "$(NO_COLOR)"
-
-o_dir:
-	@mkdir -p $(ODIR)
-	@echo "$(GREEN)objs folder:\t\t\t\t\t\t[OK]$(NO_COLOR)"
-
-update: header fclean
-	@git pull
-
-push:	header fclean
-	@echo -n "$(GREEN)"
-	@git add .
-	@git commit --quiet -m 'update'
-	@git push --quiet
-	@echo "$(GREEN)git push:\t\t\t\t\t\t[OK]$(NO_COLOR)"
-
-clean:	header
-ifneq ($(wildcard ./$(ODIR)),)
-	@make -C $(LDIR) --quiet clean
-	@rm -rf $(ODIR)
-	@echo "$(GREEN)objs folder:\t\t\t\t\t\t[RM]$(NO_COLOR)"
-else
-	@make -C $(LDIR) --quiet clean
-	@rm -f $(wildcard *.o)
-	@echo "$(GREEN)obj files:\t\t\t\t\t\t[RM]$(NO_COLOR)"
+ifeq ($(IS_LIB),true)
+	@make -C $L --quiet
+endif
+ifeq ($(IS_PTF),true)
+	@make -C $P --quiet
+endif
+ifeq ($(IS_MLX),true)
+	@make -C $M --quiet 
 endif
 
-fclean:	header clean
-	@make -C $(LDIR) --quiet fclean
-	@rm -f $(NAME)
-	@echo "$(GREEN)$(NAME) executable:\t\t\t\t\t[RM]$(NO_COLOR)"
-	
-re:		header fclean all 
+cleanobj:
+	@$(RM) $(O)
+	@echo "$(HIORANGE)removing $O folder:[RM]$(NO_COLOR)" | $(SPACE)
 
-.PHONY:	all bonus clean fclean re push update o_dir
+cleandep:
+	@$(RM) $(D)
+	@echo "$(HIORANGE)removing $D folder:[RM]$(NO_COLOR)" | $(SPACE)
+
+clean: header h2 cleanobj cleandep
+
+fcleanlib: header
+ifeq ($(IS_LIB),true)
+	@make -C $L --quiet fclean
+endif
+ifeq ($(IS_PTF),true)
+	@make -C $P --quiet fclean
+endif
+ifeq ($(IS_MLX),true)
+	@make -C $M --quiet clean
+endif
+
+fclean: header fcleanlib h2 clean
+	@$(RM) $(NAME)
+	@echo "$(HIORANGE)removing $(NAME):[RM]$(NO_COLOR)" | $(SPACE)
+	
+re:	header fclean all
+
+include colors.mk output.mk header.mk
+
+.PHONY:	all clean fclean re
