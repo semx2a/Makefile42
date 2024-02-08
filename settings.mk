@@ -6,7 +6,7 @@ ifndef SETTINGS_MK
 NAME	=	executablename
 
 ifeq ($(MAKECMDGOALS), bonus)
-BONUS_NAME	=	executablename_bonus
+NAME	=	executablename_bonus
 endif
 
 UNAME	=	$(shell uname)
